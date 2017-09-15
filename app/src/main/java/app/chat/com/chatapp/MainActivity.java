@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,8 +77,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 EditText input  = (EditText)findViewById(R.id.input);
-                FirebaseDatabase.getInstance().getReference().push().setValue(new ChatMessage(input.getText().toString(),
-                        FirebaseAuth.getInstance().getCurrentUser().getEmail(), "13513011@std.stei.itb.ac.id"));
+                int res = FirebaseAuth.getInstance().getCurrentUser().getEmail().compareTo("13513011@std.stei.itb.ac.id");
+                String user = "";
+                boolean tempIsUser = true;
+                if (res > 0 ){
+                    user += "13513011@std.stei.itb.ac.id/"+FirebaseAuth.getInstance().getCurrentUser().getEmail();
+                    tempIsUser = false;
+                }else{
+                    user+= FirebaseAuth.getInstance().getCurrentUser().getEmail() + "/13513011@std.stei.itb.ac.id";
+                    tempIsUser = true;
+                }
+                FirebaseDatabase.getInstance().getReference().push().setValue(new ChatMessage(input.getText().toString(),user,tempIsUser));
                 input.setText("");
             }
         });
@@ -97,12 +107,22 @@ public class MainActivity extends AppCompatActivity {
     private void displayChatMessage() {
         Log.d("its","Display");
         ListView listOfMessage = (ListView)findViewById(R.id.list_of_massage);
-        adapter = new FirebaseListAdapter<ChatMessage>(this,ChatMessage.class, R.layout.list_item, FirebaseDatabase.getInstance().getReference().orderByChild("messageUser").equalTo(FirebaseAuth.getInstance().getCurrentUser().getEmail() + "/13513011@std.stei.itb.ac.id")) {
+        int res = FirebaseAuth.getInstance().getCurrentUser().getEmail().compareTo("13513011@std.stei.itb.ac.id");
+        String user = "";
+        boolean tempIsUser = true;
+        if (res > 0 ){
+            user += "13513011@std.stei.itb.ac.id/"+FirebaseAuth.getInstance().getCurrentUser().getEmail();
+            tempIsUser = false;
+        }else{
+            user+= FirebaseAuth.getInstance().getCurrentUser().getEmail() + "/13513011@std.stei.itb.ac.id";
+            tempIsUser = true;
+        }
+        adapter = new FirebaseListAdapter<ChatMessage>(this,ChatMessage.class, R.layout.list_item, FirebaseDatabase.getInstance().getReference().orderByChild("messageUser").equalTo(user)) {
             @Override
             protected void populateView(View v, ChatMessage model, int position) {
                 //Get references to the views of list_item.xml
                 String[] user = model.getMessageUser().split("/");
-                if (user[0].equals(FirebaseAuth.getInstance().getCurrentUser().getEmail())&& user[1].equals("13513011@std.stei.itb.ac.id")){
+                if (model.getIsUser()){
                     TextView messageText, messageUser, messageTime;
                     messageText = (TextView) v.findViewById(R.id.message_text);
                     messageUser = (TextView) v.findViewById(R.id.message_user);
@@ -111,8 +131,16 @@ public class MainActivity extends AppCompatActivity {
                     messageText.setText(model.getMessageText());
                     messageUser.setText(user[0]);
                     messageTime.setText(DateFormat.format("dd-MM-yyyy (HH:mm:ss)",model.getMessageTime()));
-                }
+                }else{
+                    TextView messageText, messageUser, messageTime;
+                    messageText = (TextView) v.findViewById(R.id.message_text);
+                    messageUser = (TextView) v.findViewById(R.id.message_user);
+                    messageTime = (TextView) v.findViewById(R.id.message_time);
 
+                    messageText.setText(model.getMessageText());
+                    messageUser.setText(user[1]);
+                    messageTime.setText(DateFormat.format("dd-MM-yyyy (HH:mm:ss)",model.getMessageTime()));
+                }
             }
         };
         listOfMessage.setAdapter(adapter);
