@@ -5,6 +5,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -30,7 +31,6 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseListAdapter<ChatMessage> adapter;
     RelativeLayout activity_main;
     FloatingActionButton fab;
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if(item.getItemId() == R.id.menu_sign_out){
@@ -77,15 +77,17 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 EditText input  = (EditText)findViewById(R.id.input);
                 FirebaseDatabase.getInstance().getReference().push().setValue(new ChatMessage(input.getText().toString(),
-                        FirebaseAuth.getInstance().getCurrentUser().getEmail()));
+                        FirebaseAuth.getInstance().getCurrentUser().getEmail(), "13513011@std.stei.itb.ac.id"));
                 input.setText("");
             }
         });
 
         //Check if not sign-in then navigate Signin page
         if (FirebaseAuth.getInstance().getCurrentUser() == null){
+            Log.d("its","not Signed in");
             startActivityForResult(AuthUI.getInstance().createSignInIntentBuilder().build(), SIGN_IN_REQUEST_CODE);
         }else{
+            Log.d("its", "Signed in");
             Snackbar.make(activity_main, "Welcome "+FirebaseAuth.getInstance().getCurrentUser().getEmail(), Snackbar.LENGTH_SHORT).show();
             //Load content
             displayChatMessage();
@@ -93,19 +95,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void displayChatMessage() {
+        Log.d("its","Display");
         ListView listOfMessage = (ListView)findViewById(R.id.list_of_massage);
-        adapter = new FirebaseListAdapter<ChatMessage>(this,ChatMessage.class, R.layout.list_item, FirebaseDatabase.getInstance().getReference()) {
+        adapter = new FirebaseListAdapter<ChatMessage>(this,ChatMessage.class, R.layout.list_item, FirebaseDatabase.getInstance().getReference().orderByChild("messageUser").equalTo(FirebaseAuth.getInstance().getCurrentUser().getEmail() + "/13513011@std.stei.itb.ac.id")) {
             @Override
             protected void populateView(View v, ChatMessage model, int position) {
                 //Get references to the views of list_item.xml
-                TextView messageText, messageUser, messageTime;
-                messageText = (TextView) v.findViewById(R.id.message_text);
-                messageUser = (TextView) v.findViewById(R.id.message_user);
-                messageTime = (TextView) v.findViewById(R.id.message_time);
+                String[] user = model.getMessageUser().split("/");
+                if (user[0].equals(FirebaseAuth.getInstance().getCurrentUser().getEmail())&& user[1].equals("13513011@std.stei.itb.ac.id")){
+                    TextView messageText, messageUser, messageTime;
+                    messageText = (TextView) v.findViewById(R.id.message_text);
+                    messageUser = (TextView) v.findViewById(R.id.message_user);
+                    messageTime = (TextView) v.findViewById(R.id.message_time);
 
-                messageText.setText(model.getMessageText());
-                messageUser.setText(model.getMessageUser());
-                messageTime.setText(DateFormat.format("dd-MM-yyyy (HH:mm:ss)",model.getMessageTime()));
+                    messageText.setText(model.getMessageText());
+                    messageUser.setText(user[0]);
+                    messageTime.setText(DateFormat.format("dd-MM-yyyy (HH:mm:ss)",model.getMessageTime()));
+                }
+
             }
         };
         listOfMessage.setAdapter(adapter);
